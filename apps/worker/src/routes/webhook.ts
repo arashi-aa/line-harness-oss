@@ -547,49 +547,15 @@ async function handleEvent(
       try {
         const steps = await getScenarioSteps(db, fs.scenario_id);
         const nextStep = steps.find((s) => s.step_order > fs.current_step_order);
+        const isSurveyScenario = fs.scenario_id === surveyScenarioId;
+
         if (!nextStep) {
-          await completeFriendScenario(db, fs.id);
-          continue;
-        }
-
-        // Send next step immediately via pushMessage
-        const expandedContent = expandVariables(nextStep.message_content, friend as { id: string; display_name: string | null; user_id: string | null }, workerUrl);
-        const message = buildMessage(nextStep.message_type, expandedContent);
-        await lineClient.pushMessage(friend.line_user_id, [message]);
-
-        // Log outgoing message
-        const outLogId = crypto.randomUUID();
-        await db
-          .prepare(
-            `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
-             VALUES (?, ?, 'outgoing', ?, ?, NULL, ?, 'push', ?)`,
-          )
-          .bind(outLogId, friend.id, nextStep.message_type, nextStep.message_content, nextStep.id, jstNow())
-          .run();
-
-        // Advance or complete.
-        // ユーザーがメッセージを送ったことでここに来ているので、以降も
-        // ユーザー応答駆動で進行する。cron の先走りを防ぐため
-        // next_delivery_at=NULL をセットする（サーベイシナリオ）。
-        // 非サーベイのドリップキャンペーンは従来通り next_delivery_at を
-        // スケジュールしておく（cron で時間経過に応じて配信）。
-        const nextIndex = steps.indexOf(nextStep) + 1;
-        const followingStep = nextIndex < steps.length ? steps[nextIndex] : null;
-        if (followingStep) {
-          const isSurveyScenario = fs.scenario_id === surveyScenarioId;
-          if (isSurveyScenario) {
-            await advanceFriendScenario(db, fs.id, nextStep.step_order, null);
-          } else {
-            const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
-            nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + followingStep.delay_minutes);
-            await advanceFriendScenario(db, fs.id, nextStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
-          }
-        } else {
+          // 「前回送ったステップ（= current_step_order）」への回答を受信した。
+          // 次のステップが無い = 最後のステップ（Q12）への回答が来た、ということ。
+          // ここで初めて scenario を完了し、サーベイなら連携 URL を送る。
           await completeFriendScenario(db, fs.id);
 
-          // サーベイシナリオが完了したタイミングで、記事紹介文 + 連携 URL を 1 通で送信する。
-          // Step 13（固定 URL の旧完了メッセージ）は D1 migration 012 で削除済み。
-          if (fs.scenario_id === surveyScenarioId && pokerhpPairApiUrl && pokerhpPairApiToken) {
+          if (isSurveyScenario && pokerhpPairApiUrl && pokerhpPairApiToken) {
             try {
               const linkUrl = await issueLinkUrl(
                 friend.line_user_id,
@@ -614,6 +580,42 @@ async function handleEvent(
               console.error('Failed to send post-survey link URL:', err);
             }
           }
+          continue;
+        }
+
+        // 次のステップがあるので pushMessage で送信
+        const expandedContent = expandVariables(nextStep.message_content, friend as { id: string; display_name: string | null; user_id: string | null }, workerUrl);
+        const message = buildMessage(nextStep.message_type, expandedContent);
+        await lineClient.pushMessage(friend.line_user_id, [message]);
+
+        // Log outgoing message
+        const outLogId = crypto.randomUUID();
+        await db
+          .prepare(
+            `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+             VALUES (?, ?, 'outgoing', ?, ?, NULL, ?, 'push', ?)`,
+          )
+          .bind(outLogId, friend.id, nextStep.message_type, nextStep.message_content, nextStep.id, jstNow())
+          .run();
+
+        // Advance: 送信したステップの step_order に進める。サーベイは常に
+        // next_delivery_at=null でユーザー応答待ち。非サーベイ（ドリップ）は
+        // 次のステップがあれば schedule、無ければ complete。
+        //
+        // ここでは最後のステップでも completeFriendScenario しない。
+        // 最後のステップ（Q12）への回答が次に来たとき、上の nextStep=null
+        // 分岐で完了＋post-completion フックが走る。
+        const nextIndex = steps.indexOf(nextStep) + 1;
+        const followingStep = nextIndex < steps.length ? steps[nextIndex] : null;
+        if (isSurveyScenario) {
+          await advanceFriendScenario(db, fs.id, nextStep.step_order, null);
+        } else if (followingStep) {
+          const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
+          nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + followingStep.delay_minutes);
+          await advanceFriendScenario(db, fs.id, nextStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
+        } else {
+          // 非サーベイの最後のステップ送信 → 即完了（従来挙動）
+          await completeFriendScenario(db, fs.id);
         }
       } catch (err) {
         console.error('Failed immediate scenario delivery on message:', err);
