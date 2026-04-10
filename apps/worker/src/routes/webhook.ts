@@ -272,8 +272,31 @@ async function handleEvent(
       event.source.type === 'user' ? event.source.userId : undefined;
     if (!userId) return;
 
-    const friend = await getFriendByLineUserId(db, userId);
-    if (!friend) return;
+    // Harness webhook 設定前に友だち追加していたユーザーは friends テーブルに
+    // 行がない。初回メッセージ時点で LINE プロフィールを取得して upsert する
+    // ことで、以降のロジック（キーワード応答・シナリオ進行・自動返信）が
+    // 正常に動作するようにする。
+    let friend = await getFriendByLineUserId(db, userId);
+    if (!friend) {
+      let profile;
+      try {
+        profile = await lineClient.getProfile(userId);
+      } catch (err) {
+        console.error('Failed to fetch profile for legacy friend', userId, err);
+      }
+      friend = await upsertFriend(db, {
+        lineUserId: userId,
+        displayName: profile?.displayName ?? null,
+        pictureUrl: profile?.pictureUrl ?? null,
+        statusMessage: profile?.statusMessage ?? null,
+      });
+      if (lineAccountId) {
+        await db
+          .prepare('UPDATE friends SET line_account_id = ? WHERE id = ? AND line_account_id IS NULL')
+          .bind(lineAccountId, friend.id)
+          .run();
+      }
+    }
 
     const incomingText = textMessage.text;
     const now = jstNow();
