@@ -75,6 +75,8 @@ webhook.post('/webhook', async (c) => {
           c.env.WORKER_URL || new URL(c.req.url).origin,
           c.env.SURVEY_SCENARIO_ID || DEFAULT_SURVEY_SCENARIO_ID,
           c.env.LIFF_URL,
+          c.env.POKERHP_PAIR_API_URL,
+          c.env.POKERHP_PAIR_API_TOKEN,
         );
       } catch (err) {
         console.error('Error handling webhook event:', err);
@@ -101,6 +103,8 @@ async function handleEvent(
   workerUrl?: string,
   surveyScenarioId: string = DEFAULT_SURVEY_SCENARIO_ID,
   liffUrl?: string,
+  pokerhpPairApiUrl?: string,
+  pokerhpPairApiToken?: string,
 ): Promise<void> {
   if (event.type === 'follow') {
     const userId =
@@ -218,9 +222,77 @@ async function handleEvent(
       .bind(logId, friend.id, incomingText, now)
       .run();
 
+    const trimmedText = incomingText.trim();
+
+    // 「連携 XXXXXX」 / 「れんけい XXXXXX」 / 「pair XXXXXX」 パターン:
+    // pokerHP から発行された 6桁コードと友だちの line_user_id を pokerHP /api/line/pair に
+    // POST して LINE Login ID ↔ Messaging API ID のマッピングを作成する。
+    const pairMatch = trimmedText.match(/^(?:連携|れんけい|pair|PAIR)\s*[:：]?\s*(\d{6})\s*$/i);
+    if (pairMatch && pokerhpPairApiUrl && pokerhpPairApiToken) {
+      const pairCode = pairMatch[1];
+      try {
+        const res = await fetch(pokerhpPairApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${pokerhpPairApiToken}`,
+          },
+          body: JSON.stringify({
+            code: pairCode,
+            messagingApiId: friend.line_user_id,
+          }),
+        });
+
+        const body = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          reason?: string;
+        };
+
+        let replyText: string;
+        if (res.ok && body.ok) {
+          replyText =
+            '連携が完了しました✨\n\nSeeker Start のゲート記事がすぐ読めるようになりました。ブラウザに戻ってページを再読み込みしてください。\n\nまだアンケートに未回答の方は「アンケート」と送ると始まります。';
+        } else {
+          switch (body.reason) {
+            case 'not_found':
+              replyText = 'そのコードは見つかりませんでした。Seeker Start のページで最新のコードを発行し直してください。';
+              break;
+            case 'expired':
+              replyText = 'コードの有効期限が切れています（10分）。Seeker Start のページで再発行してください。';
+              break;
+            case 'already_consumed':
+              replyText = 'そのコードは既に使用済みです。Seeker Start のページで新しいコードを発行してください。';
+              break;
+            default:
+              replyText = '連携処理に失敗しました。時間を置いてもう一度お試しください。';
+          }
+        }
+
+        await lineClient.replyMessage(event.replyToken, [buildMessage('text', replyText)]);
+
+        const outLogId = crypto.randomUUID();
+        await db
+          .prepare(
+            `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+             VALUES (?, ?, 'outgoing', 'text', ?, NULL, NULL, 'reply', ?)`,
+          )
+          .bind(outLogId, friend.id, replyText, jstNow())
+          .run();
+      } catch (err) {
+        console.error('Failed to call pokerHP pair API:', err);
+        try {
+          await lineClient.replyMessage(event.replyToken, [
+            buildMessage('text', '連携サーバーと通信できませんでした。時間を置いてもう一度お試しください。'),
+          ]);
+        } catch (e2) {
+          console.error('Failed to reply pair error:', e2);
+        }
+      }
+      return;
+    }
+
     // 「アンケート」キーワード: 既存の friend_scenarios 行を削除して再エンロール、Q1を即時返信。
     // 既回答のユーザーでも再回答を許可する。
-    const trimmedText = incomingText.trim();
     if (SURVEY_RESTART_KEYWORDS.includes(trimmedText)) {
       try {
         // 既存の同一シナリオへの紐付けを全て削除（active/completed/paused 問わず）

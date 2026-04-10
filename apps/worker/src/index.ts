@@ -48,6 +48,8 @@ export type Env = {
     WORKER_URL: string;
     X_HARNESS_URL?: string;  // Optional: X Harness API URL for account linking
     SURVEY_SCENARIO_ID?: string;  // Optional: Scenario ID restarted by 「アンケート」 keyword
+    POKERHP_PAIR_API_URL?: string;  // Optional: pokerHP /api/line/pair endpoint for 6-digit code pairing
+    POKERHP_PAIR_API_TOKEN?: string;  // Optional: Bearer token for pokerHP pair API
   };
   Variables: {
     staff: { id: string; name: string; role: 'owner' | 'admin' | 'staff' };
