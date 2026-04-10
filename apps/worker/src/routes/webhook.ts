@@ -232,12 +232,20 @@ async function handleEvent(
                   .bind(logId, friend.id, firstStep.message_type, firstStep.message_content, firstStep.id, jstNow())
                   .run();
 
-                // Advance or complete the friend_scenario
+                // Advance or complete the friend_scenario.
+                // サーベイシナリオ（ユーザー応答待ち型）では cron による
+                // 自動進行を無効化するため next_delivery_at=NULL にセット。
+                // 以降は message handler の active scenarios loop でのみ進行する。
                 const secondStep = steps[1] ?? null;
                 if (secondStep) {
-                  const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
-                  nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + secondStep.delay_minutes);
-                  await advanceFriendScenario(db, friendScenario.id, firstStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
+                  const isSurveyScenario = scenario.id === surveyScenarioId;
+                  if (isSurveyScenario) {
+                    await advanceFriendScenario(db, friendScenario.id, firstStep.step_order, null);
+                  } else {
+                    const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
+                    nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + secondStep.delay_minutes);
+                    await advanceFriendScenario(db, friendScenario.id, firstStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
+                  }
                 } else {
                   await completeFriendScenario(db, friendScenario.id);
                 }
@@ -417,17 +425,11 @@ async function handleEvent(
             .bind(outLogId, friend.id, firstStep.message_type, firstStep.message_content, firstStep.id, jstNow())
             .run();
 
-          // 進行状態を更新（次のステップがあれば next_delivery_at をセット、なければ完了）
+          // 進行状態を更新。サーベイは next_delivery_at=NULL で cron を
+          // 止めて、ユーザー応答駆動のみで進行させる。
           const secondStep = steps[1] ?? null;
           if (secondStep) {
-            const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
-            nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + secondStep.delay_minutes);
-            await advanceFriendScenario(
-              db,
-              friendScenario.id,
-              firstStep.step_order,
-              nextDeliveryDate.toISOString().slice(0, -1) + '+09:00',
-            );
+            await advanceFriendScenario(db, friendScenario.id, firstStep.step_order, null);
           } else {
             await completeFriendScenario(db, friendScenario.id);
           }
@@ -565,13 +567,23 @@ async function handleEvent(
           .bind(outLogId, friend.id, nextStep.message_type, nextStep.message_content, nextStep.id, jstNow())
           .run();
 
-        // Advance or complete
+        // Advance or complete.
+        // ユーザーがメッセージを送ったことでここに来ているので、以降も
+        // ユーザー応答駆動で進行する。cron の先走りを防ぐため
+        // next_delivery_at=NULL をセットする（サーベイシナリオ）。
+        // 非サーベイのドリップキャンペーンは従来通り next_delivery_at を
+        // スケジュールしておく（cron で時間経過に応じて配信）。
         const nextIndex = steps.indexOf(nextStep) + 1;
         const followingStep = nextIndex < steps.length ? steps[nextIndex] : null;
         if (followingStep) {
-          const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
-          nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + followingStep.delay_minutes);
-          await advanceFriendScenario(db, fs.id, nextStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
+          const isSurveyScenario = fs.scenario_id === surveyScenarioId;
+          if (isSurveyScenario) {
+            await advanceFriendScenario(db, fs.id, nextStep.step_order, null);
+          } else {
+            const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
+            nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + followingStep.delay_minutes);
+            await advanceFriendScenario(db, fs.id, nextStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
+          }
         } else {
           await completeFriendScenario(db, fs.id);
 
