@@ -93,6 +93,8 @@ webhook.post('/webhook', async (c) => {
 // （wrangler.toml の [vars] SURVEY_SCENARIO_ID で上書き可能）
 const DEFAULT_SURVEY_SCENARIO_ID = '2e832c35-a090-468f-943f-1d98bd3b2db2';
 const SURVEY_RESTART_KEYWORDS = ['アンケート', 'あんけーと', 'アンケート再開', 'survey', 'Survey', 'SURVEY'];
+// Force-restart（完了済みでも強制的に Q1 から再送）するためのキーワード
+const SURVEY_FORCE_RESTART_KEYWORDS = ['アンケート再回答', 'アンケートやり直し', 'アンケートリセット'];
 
 /**
  * pokerHP /api/line/create-link-url を呼んで連携用 URL を取得する。
@@ -285,11 +287,48 @@ async function handleEvent(
       return;
     }
 
-    // 「アンケート」キーワード: 既存の friend_scenarios 行を削除して再エンロール、Q1を即時返信。
-    // 既回答のユーザーでも再回答を許可する。
-    if (SURVEY_RESTART_KEYWORDS.includes(trimmedText)) {
+    // 「アンケート」キーワード:
+    // - 既に回答完了しているユーザー → Q1〜Q12 を再送せず、連携 URL だけ返す
+    // - 未回答のユーザー → friend_scenarios を削除して再エンロール、Q1 を即時返信
+    // 「アンケート再回答」等の強制再回答キーワードは完了済みでも必ず Q1 から再送する
+    const isForceRestart = SURVEY_FORCE_RESTART_KEYWORDS.includes(trimmedText);
+    if (SURVEY_RESTART_KEYWORDS.includes(trimmedText) || isForceRestart) {
+      // 既に完了済みかチェック（force restart なら飛ばす）
+      const completedRow = isForceRestart
+        ? null
+        : await db
+        .prepare(
+          `SELECT id FROM friend_scenarios WHERE friend_id = ? AND scenario_id = ? AND status = 'completed' LIMIT 1`,
+        )
+        .bind(friend.id, surveyScenarioId)
+        .first<{ id: string }>();
+
+      if (completedRow && pokerhpPairApiUrl && pokerhpPairApiToken) {
+        // 既回答ユーザー: 連携 URL のみを送る
+        try {
+          const linkUrl = await issueLinkUrl(friend.line_user_id, pokerhpPairApiUrl, pokerhpPairApiToken);
+          const replyText = linkUrl
+            ? `既にアンケートにご回答いただいているので、下のリンクをタップすれば Seeker Start の記事がすぐ読めます👇\n\n${linkUrl}\n\n※有効期限は30分です\n※再回答したい場合は「アンケート再回答」と送信してください`
+            : '連携サーバーと通信できませんでした。時間を置いてもう一度お試しください。';
+
+          await lineClient.replyMessage(event.replyToken, [buildMessage('text', replyText)]);
+
+          const outLogId = crypto.randomUUID();
+          await db
+            .prepare(
+              `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+               VALUES (?, ?, 'outgoing', 'text', ?, NULL, NULL, 'reply', ?)`,
+            )
+            .bind(outLogId, friend.id, replyText, jstNow())
+            .run();
+        } catch (err) {
+          console.error('Failed to send survey-already-completed link:', err);
+        }
+        return;
+      }
+
       try {
-        // 既存の同一シナリオへの紐付けを全て削除（active/completed/paused 問わず）
+        // 未回答（または強制再回答キーワード）→ 既存行を全削除して再エンロール
         await db
           .prepare(`DELETE FROM friend_scenarios WHERE friend_id = ? AND scenario_id = ?`)
           .bind(friend.id, surveyScenarioId)
