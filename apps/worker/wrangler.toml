@@ -2,12 +2,16 @@ name = "line-harness"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 workers_dev = true
-account_id = "c40947ff58a767be74a53be79a89d68a"
+account_id = "255eaf8b0b7bfcf8ea76c782fb7ae87b"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "line-harness"
-database_id = "7efe7c20-01ae-4d65-be08-0d7b4202e8a1"
+database_name = "line-crm"
+database_id = "b484c091-6be0-48bc-9046-61b288f8bd12"
+
+[vars]
+# 「アンケート」キーワードでユーザーが再回答できるシナリオのID
+SURVEY_SCENARIO_ID = "2e832c35-a090-468f-943f-1d98bd3b2db2"
 
 [triggers]
 crons = ["*/5 * * * *"]

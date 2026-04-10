@@ -45,25 +45,9 @@ export function expandVariables(
   return result;
 }
 
-/** Default delivery window: 9:00-23:00 JST. If outside, push to next 9:00 AM. */
-const DEFAULT_START_HOUR = 9;
-const DEFAULT_END_HOUR = 23;
-
-function enforceDeliveryWindow(date: Date, preferredHour?: number): Date {
-  // date is already shifted to JST epoch (+9h)
-  const hours = date.getUTCHours();
-  const startHour = preferredHour ?? DEFAULT_START_HOUR;
-  const endHour = DEFAULT_END_HOUR;
-
-  if (hours >= startHour && hours < endHour) return date;
-
-  // Outside window: push to next preferred start hour
-  const result = new Date(date);
-  if (hours >= endHour) {
-    result.setUTCDate(result.getUTCDate() + 1);
-  }
-  result.setUTCHours(startHour, 0, 0, 0);
-  return result;
+/** Delivery window disabled — deliver 24/7 */
+function enforceDeliveryWindow(date: Date, _preferredHour?: number): Date {
+  return date;
 }
 
 export async function processStepDeliveries(
@@ -71,9 +55,7 @@ export async function processStepDeliveries(
   lineClient: LineClient,
   workerUrl?: string,
 ): Promise<void> {
-  // Skip delivery outside 9:00-23:00 JST window
-  const jstHour = new Date(Date.now() + 9 * 60 * 60_000).getUTCHours();
-  if (jstHour < DEFAULT_START_HOUR || jstHour >= DEFAULT_END_HOUR) return;
+  // Delivery window disabled — process 24/7
 
   const now = jstNow();
   const dueFriendScenarios = await getFriendScenariosDueForDelivery(db, now);

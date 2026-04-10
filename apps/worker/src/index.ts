@@ -47,6 +47,7 @@ export type Env = {
     LINE_LOGIN_CHANNEL_SECRET: string;
     WORKER_URL: string;
     X_HARNESS_URL?: string;  // Optional: X Harness API URL for account linking
+    SURVEY_SCENARIO_ID?: string;  // Optional: Scenario ID restarted by 「アンケート」 keyword
   };
   Variables: {
     staff: { id: string; name: string; role: 'owner' | 'admin' | 'staff' };

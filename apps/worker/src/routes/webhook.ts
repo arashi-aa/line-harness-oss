@@ -66,7 +66,16 @@ webhook.post('/webhook', async (c) => {
   const processingPromise = (async () => {
     for (const event of body.events) {
       try {
-        await handleEvent(db, lineClient, event, channelAccessToken, matchedAccountId, c.env.WORKER_URL || new URL(c.req.url).origin);
+        await handleEvent(
+          db,
+          lineClient,
+          event,
+          channelAccessToken,
+          matchedAccountId,
+          c.env.WORKER_URL || new URL(c.req.url).origin,
+          c.env.SURVEY_SCENARIO_ID || DEFAULT_SURVEY_SCENARIO_ID,
+          c.env.LIFF_URL,
+        );
       } catch (err) {
         console.error('Error handling webhook event:', err);
       }
@@ -78,6 +87,11 @@ webhook.post('/webhook', async (c) => {
   return c.json({ status: 'ok' }, 200);
 });
 
+// 「アンケート」キーワードで再開できるシナリオのデフォルトID
+// （wrangler.toml の [vars] SURVEY_SCENARIO_ID で上書き可能）
+const DEFAULT_SURVEY_SCENARIO_ID = '2e832c35-a090-468f-943f-1d98bd3b2db2';
+const SURVEY_RESTART_KEYWORDS = ['アンケート', 'あんけーと', 'アンケート再開', 'survey', 'Survey', 'SURVEY'];
+
 async function handleEvent(
   db: D1Database,
   lineClient: LineClient,
@@ -85,6 +99,8 @@ async function handleEvent(
   lineAccessToken: string,
   lineAccountId: string | null = null,
   workerUrl?: string,
+  surveyScenarioId: string = DEFAULT_SURVEY_SCENARIO_ID,
+  liffUrl?: string,
 ): Promise<void> {
   if (event.type === 'follow') {
     const userId =
@@ -151,12 +167,6 @@ async function handleEvent(
                 if (secondStep) {
                   const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
                   nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + secondStep.delay_minutes);
-                  // Enforce 9:00-21:00 JST delivery window
-                  const h = nextDeliveryDate.getUTCHours();
-                  if (h < 9 || h >= 21) {
-                    if (h >= 21) nextDeliveryDate.setUTCDate(nextDeliveryDate.getUTCDate() + 1);
-                    nextDeliveryDate.setUTCHours(9, 0, 0, 0);
-                  }
                   await advanceFriendScenario(db, friendScenario.id, firstStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
                 } else {
                   await completeFriendScenario(db, friendScenario.id);
@@ -207,6 +217,63 @@ async function handleEvent(
       )
       .bind(logId, friend.id, incomingText, now)
       .run();
+
+    // 「アンケート」キーワード: 既存の friend_scenarios 行を削除して再エンロール、Q1を即時返信。
+    // 既回答のユーザーでも再回答を許可する。
+    const trimmedText = incomingText.trim();
+    if (SURVEY_RESTART_KEYWORDS.includes(trimmedText)) {
+      try {
+        // 既存の同一シナリオへの紐付けを全て削除（active/completed/paused 問わず）
+        await db
+          .prepare(`DELETE FROM friend_scenarios WHERE friend_id = ? AND scenario_id = ?`)
+          .bind(friend.id, surveyScenarioId)
+          .run();
+
+        // 再エンロール
+        const friendScenario = await enrollFriendInScenario(db, friend.id, surveyScenarioId);
+
+        // Q1 を即座に replyMessage で返信（無料、quota消費なし）
+        const steps = await getScenarioSteps(db, surveyScenarioId);
+        const firstStep = steps[0];
+        if (firstStep) {
+          const expandedContent = expandVariables(
+            firstStep.message_content,
+            friend as { id: string; display_name: string | null; user_id: string | null },
+            workerUrl,
+          );
+          const replyMsg = buildMessage(firstStep.message_type, expandedContent);
+          await lineClient.replyMessage(event.replyToken, [replyMsg]);
+
+          // 送信ログ
+          const outLogId = crypto.randomUUID();
+          await db
+            .prepare(
+              `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+               VALUES (?, ?, 'outgoing', ?, ?, NULL, ?, 'reply', ?)`,
+            )
+            .bind(outLogId, friend.id, firstStep.message_type, firstStep.message_content, firstStep.id, jstNow())
+            .run();
+
+          // 進行状態を更新（次のステップがあれば next_delivery_at をセット、なければ完了）
+          const secondStep = steps[1] ?? null;
+          if (secondStep) {
+            const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
+            nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + secondStep.delay_minutes);
+            await advanceFriendScenario(
+              db,
+              friendScenario.id,
+              firstStep.step_order,
+              nextDeliveryDate.toISOString().slice(0, -1) + '+09:00',
+            );
+          } else {
+            await completeFriendScenario(db, friendScenario.id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to restart survey scenario via keyword:', err);
+      }
+      return; // 早期return: 他のハンドラ（チャット更新・自動返信・既存シナリオ進行）はスキップ
+    }
 
     // チャットを作成/更新（ユーザーの自発的メッセージのみ unread にする）
     // ボタンタップ等の自動応答キーワードは除外
@@ -282,7 +349,7 @@ async function handleEvent(
               footer: { type: 'box', layout: 'vertical', paddingAll: '16px',
                 contents: [
                   { type: 'button', action: { type: 'message', label: '導入について相談する', text: '導入支援を希望します' }, style: 'primary', color: '#06C755' },
-                  ...(c.env.LIFF_URL ? [{ type: 'button', action: { type: 'uri', label: 'フィードバックを送る', uri: `${c.env.LIFF_URL}?page=form` }, style: 'secondary', margin: 'sm' }] : []),
+                  ...(liffUrl ? [{ type: 'button', action: { type: 'uri', label: 'フィードバックを送る', uri: `${liffUrl}?page=form` }, style: 'secondary', margin: 'sm' }] : []),
                 ],
               },
             }))]);
@@ -302,6 +369,51 @@ async function handleEvent(
         }
       } catch (err) {
         console.error('Cross-account trigger error:', err);
+      }
+    }
+
+    // シナリオ即時配信: アクティブなシナリオがあれば回答後すぐに次のステップを送る
+    const activeScenarios = await db
+      .prepare(`SELECT fs.id, fs.scenario_id, fs.current_step_order, fs.status FROM friend_scenarios fs WHERE fs.friend_id = ? AND fs.status = 'active'`)
+      .bind(friend.id)
+      .all<{ id: string; scenario_id: string; current_step_order: number; status: string }>();
+
+    for (const fs of activeScenarios.results) {
+      try {
+        const steps = await getScenarioSteps(db, fs.scenario_id);
+        const nextStep = steps.find((s) => s.step_order > fs.current_step_order);
+        if (!nextStep) {
+          await completeFriendScenario(db, fs.id);
+          continue;
+        }
+
+        // Send next step immediately via pushMessage
+        const expandedContent = expandVariables(nextStep.message_content, friend as { id: string; display_name: string | null; user_id: string | null }, workerUrl);
+        const message = buildMessage(nextStep.message_type, expandedContent);
+        await lineClient.pushMessage(friend.line_user_id, [message]);
+
+        // Log outgoing message
+        const outLogId = crypto.randomUUID();
+        await db
+          .prepare(
+            `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+             VALUES (?, ?, 'outgoing', ?, ?, NULL, ?, 'push', ?)`,
+          )
+          .bind(outLogId, friend.id, nextStep.message_type, nextStep.message_content, nextStep.id, jstNow())
+          .run();
+
+        // Advance or complete
+        const nextIndex = steps.indexOf(nextStep) + 1;
+        const followingStep = nextIndex < steps.length ? steps[nextIndex] : null;
+        if (followingStep) {
+          const nextDeliveryDate = new Date(Date.now() + 9 * 60 * 60_000);
+          nextDeliveryDate.setMinutes(nextDeliveryDate.getMinutes() + followingStep.delay_minutes);
+          await advanceFriendScenario(db, fs.id, nextStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
+        } else {
+          await completeFriendScenario(db, fs.id);
+        }
+      } catch (err) {
+        console.error('Failed immediate scenario delivery on message:', err);
       }
     }
 
