@@ -94,6 +94,40 @@ webhook.post('/webhook', async (c) => {
 const DEFAULT_SURVEY_SCENARIO_ID = '2e832c35-a090-468f-943f-1d98bd3b2db2';
 const SURVEY_RESTART_KEYWORDS = ['アンケート', 'あんけーと', 'アンケート再開', 'survey', 'Survey', 'SURVEY'];
 
+/**
+ * pokerHP /api/line/create-link-url を呼んで連携用 URL を取得する。
+ * 失敗時は null を返す。
+ */
+async function issueLinkUrl(
+  messagingApiId: string,
+  pairApiUrl: string,
+  pairApiToken: string,
+): Promise<string | null> {
+  try {
+    // pairApiUrl は pokerHP の base URL（例: https://www.seekerstart.com/api/line）
+    // 末尾が /pair などで終わっていれば除去してから /create-link-url を付ける
+    const base = pairApiUrl.replace(/\/(pair|create-link-url)\/?$/, '').replace(/\/$/, '');
+    const res = await fetch(`${base}/create-link-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${pairApiToken}`,
+      },
+      body: JSON.stringify({ messagingApiId }),
+    });
+    if (!res.ok) {
+      console.error('[link-url] pokerHP returned non-OK:', res.status);
+      return null;
+    }
+    const body = (await res.json().catch(() => ({}))) as { ok?: boolean; url?: string };
+    if (body.ok && body.url) return body.url;
+    return null;
+  } catch (err) {
+    console.error('[link-url] fetch failed:', err);
+    return null;
+  }
+}
+
 async function handleEvent(
   db: D1Database,
   lineClient: LineClient,
@@ -224,49 +258,16 @@ async function handleEvent(
 
     const trimmedText = incomingText.trim();
 
-    // 「連携 XXXXXX」 / 「れんけい XXXXXX」 / 「pair XXXXXX」 パターン:
-    // pokerHP から発行された 6桁コードと友だちの line_user_id を pokerHP /api/line/pair に
-    // POST して LINE Login ID ↔ Messaging API ID のマッピングを作成する。
-    const pairMatch = trimmedText.match(/^(?:連携|れんけい|pair|PAIR)\s*[:：]?\s*(\d{6})\s*$/i);
-    if (pairMatch && pokerhpPairApiUrl && pokerhpPairApiToken) {
-      const pairCode = pairMatch[1];
+    // 「連携」キーワード: pokerHP /api/line/create-link-url を呼んで
+    // 連携用 URL を発行し、ユーザーに返信する。ユーザーは URL をタップするだけで
+    // LINE Login ID ↔ Messaging API ID のマッピングが作成される。
+    const LINK_KEYWORDS = ['連携', 'れんけい', 'link', 'Link', 'LINK'];
+    if (LINK_KEYWORDS.includes(trimmedText) && pokerhpPairApiUrl && pokerhpPairApiToken) {
       try {
-        const res = await fetch(pokerhpPairApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${pokerhpPairApiToken}`,
-          },
-          body: JSON.stringify({
-            code: pairCode,
-            messagingApiId: friend.line_user_id,
-          }),
-        });
-
-        const body = (await res.json().catch(() => ({}))) as {
-          ok?: boolean;
-          reason?: string;
-        };
-
-        let replyText: string;
-        if (res.ok && body.ok) {
-          replyText =
-            '連携が完了しました✨\n\nSeeker Start のゲート記事がすぐ読めるようになりました。ブラウザに戻ってページを再読み込みしてください。\n\nまだアンケートに未回答の方は「アンケート」と送ると始まります。';
-        } else {
-          switch (body.reason) {
-            case 'not_found':
-              replyText = 'そのコードは見つかりませんでした。Seeker Start のページで最新のコードを発行し直してください。';
-              break;
-            case 'expired':
-              replyText = 'コードの有効期限が切れています（10分）。Seeker Start のページで再発行してください。';
-              break;
-            case 'already_consumed':
-              replyText = 'そのコードは既に使用済みです。Seeker Start のページで新しいコードを発行してください。';
-              break;
-            default:
-              replyText = '連携処理に失敗しました。時間を置いてもう一度お試しください。';
-          }
-        }
+        const linkUrl = await issueLinkUrl(friend.line_user_id, pokerhpPairApiUrl, pokerhpPairApiToken);
+        const replyText = linkUrl
+          ? `下のリンクをタップすると、Seeker Start のゲート記事がすぐ読めるようになります👇\n\n${linkUrl}\n\n※有効期限は30分です`
+          : '連携サーバーと通信できませんでした。時間を置いてもう一度お試しください。';
 
         await lineClient.replyMessage(event.replyToken, [buildMessage('text', replyText)]);
 
@@ -279,14 +280,7 @@ async function handleEvent(
           .bind(outLogId, friend.id, replyText, jstNow())
           .run();
       } catch (err) {
-        console.error('Failed to call pokerHP pair API:', err);
-        try {
-          await lineClient.replyMessage(event.replyToken, [
-            buildMessage('text', '連携サーバーと通信できませんでした。時間を置いてもう一度お試しください。'),
-          ]);
-        } catch (e2) {
-          console.error('Failed to reply pair error:', e2);
-        }
+        console.error('Failed to send link URL:', err);
       }
       return;
     }
@@ -483,6 +477,28 @@ async function handleEvent(
           await advanceFriendScenario(db, fs.id, nextStep.step_order, nextDeliveryDate.toISOString().slice(0, -1) + '+09:00');
         } else {
           await completeFriendScenario(db, fs.id);
+
+          // サーベイシナリオが完了したタイミングで pokerHP 連携用 URL を追加送信する
+          if (fs.scenario_id === surveyScenarioId && pokerhpPairApiUrl && pokerhpPairApiToken) {
+            try {
+              const linkUrl = await issueLinkUrl(friend.line_user_id, pokerhpPairApiUrl, pokerhpPairApiToken);
+              if (linkUrl) {
+                const linkMsg = `↓ 下のリンクをタップすると Seeker Start の記事が全部読めるようになります✨\n\n${linkUrl}\n\n※有効期限は30分です`;
+                await lineClient.pushMessage(friend.line_user_id, [buildMessage('text', linkMsg)]);
+
+                const linkLogId = crypto.randomUUID();
+                await db
+                  .prepare(
+                    `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+                     VALUES (?, ?, 'outgoing', 'text', ?, NULL, NULL, 'push', ?)`,
+                  )
+                  .bind(linkLogId, friend.id, linkMsg, jstNow())
+                  .run();
+              }
+            } catch (err) {
+              console.error('Failed to send post-survey link URL:', err);
+            }
+          }
         }
       } catch (err) {
         console.error('Failed immediate scenario delivery on message:', err);

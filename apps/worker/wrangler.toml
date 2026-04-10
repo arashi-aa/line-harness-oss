@@ -12,8 +12,8 @@ database_id = "b484c091-6be0-48bc-9046-61b288f8bd12"
 [vars]
 # 「アンケート」キーワードでユーザーが再回答できるシナリオのID
 SURVEY_SCENARIO_ID = "2e832c35-a090-468f-943f-1d98bd3b2db2"
-# pokerHP の 6桁コード連携API
-POKERHP_PAIR_API_URL = "https://www.seekerstart.com/api/line/pair"
+# pokerHP 連携 API のベース URL（末尾に /create-link-url を付けて使う）
+POKERHP_PAIR_API_URL = "https://www.seekerstart.com/api/line"
 # POKERHP_PAIR_API_TOKEN は wrangler secret put で設定する
 
 [triggers]
