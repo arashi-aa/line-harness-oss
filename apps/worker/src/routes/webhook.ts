@@ -96,26 +96,34 @@ const SURVEY_RESTART_KEYWORDS = ['アンケート', 'あんけーと', 'アン�
 // Force-restart（完了済みでも強制的に Q1 から再送）するためのキーワード
 const SURVEY_FORCE_RESTART_KEYWORDS = ['アンケート再回答', 'アンケートやり直し', 'アンケートリセット'];
 
+/** サーベイ完了時におすすめ記事として案内する pokerHP の記事パス */
+const SURVEY_REWARD_ARTICLE_PATH = '/learn/intermediate/akq-game';
+
 /**
  * pokerHP /api/line/create-link-url を呼んで連携用 URL を取得する。
  * 失敗時は null を返す。
+ * redirectPath を渡すと、ユーザーが URL をタップして /link に到達した後の
+ * リダイレクト先に使われる（トークンに紐付けて保存される）。
  */
 async function issueLinkUrl(
   messagingApiId: string,
   pairApiUrl: string,
   pairApiToken: string,
+  redirectPath?: string,
 ): Promise<string | null> {
   try {
     // pairApiUrl は pokerHP の base URL（例: https://www.seekerstart.com/api/line）
     // 末尾が /pair などで終わっていれば除去してから /create-link-url を付ける
     const base = pairApiUrl.replace(/\/(pair|create-link-url)\/?$/, '').replace(/\/$/, '');
+    const payload: Record<string, string> = { messagingApiId };
+    if (redirectPath) payload.redirectPath = redirectPath;
     const res = await fetch(`${base}/create-link-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${pairApiToken}`,
       },
-      body: JSON.stringify({ messagingApiId }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       console.error('[link-url] pokerHP returned non-OK:', res.status);
@@ -128,6 +136,28 @@ async function issueLinkUrl(
     console.error('[link-url] fetch failed:', err);
     return null;
   }
+}
+
+/**
+ * アンケート完了時に送信する「記事紹介文 + 連携URL」の統合メッセージ。
+ * Harness Step 13（旧固定URL）を廃止したため、このメッセージが唯一の
+ * 完了メッセージになる。
+ */
+function buildSurveyCompleteMessage(linkUrl: string): string {
+  return (
+    'アンケートへのご回答、ありがとうございます！\n\n' +
+    '感謝の気持ちを込めて、アンケート回答者だけが読める限定記事を用意しました🎁\n\n' +
+    '📖「AKQゲーム — ポーカーの本質を3枚で学ぶ」\n\n' +
+    'たった3枚のカードで遊ぶ超シンプルなポーカーなのに、\n' +
+    '・なぜブラフが必要なのか\n' +
+    '・GTO戦略とexploit戦略の本質的な違い\n' +
+    '・バリューベット・ブラフ・コールの最適な判断\n' +
+    'がぜんぶ詰まっています。\n\n' +
+    '↓ 下のリンクをタップすると自動で連携が完了して、そのまま記事が読めます✨\n\n' +
+    `${linkUrl}\n\n` +
+    '※リンクの有効期限は30分です\n' +
+    '※リンクが切れた場合は「アンケート」と送信すれば再発行されます'
+  );
 }
 
 async function handleEvent(
@@ -306,7 +336,12 @@ async function handleEvent(
       if (completedRow && pokerhpPairApiUrl && pokerhpPairApiToken) {
         // 既回答ユーザー: 連携 URL のみを送る
         try {
-          const linkUrl = await issueLinkUrl(friend.line_user_id, pokerhpPairApiUrl, pokerhpPairApiToken);
+          const linkUrl = await issueLinkUrl(
+            friend.line_user_id,
+            pokerhpPairApiUrl,
+            pokerhpPairApiToken,
+            SURVEY_REWARD_ARTICLE_PATH,
+          );
           const replyText = linkUrl
             ? `既にアンケートにご回答いただいているので、下のリンクをタップすれば Seeker Start の記事がすぐ読めます👇\n\n${linkUrl}\n\n※有効期限は30分です\n※再回答したい場合は「アンケート再回答」と送信してください`
             : '連携サーバーと通信できませんでした。時間を置いてもう一度お試しください。';
@@ -517,23 +552,29 @@ async function handleEvent(
         } else {
           await completeFriendScenario(db, fs.id);
 
-          // サーベイシナリオが完了したタイミングで pokerHP 連携用 URL を追加送信する
+          // サーベイシナリオが完了したタイミングで、記事紹介文 + 連携 URL を 1 通で送信する。
+          // Step 13（固定 URL の旧完了メッセージ）は D1 migration 012 で削除済み。
           if (fs.scenario_id === surveyScenarioId && pokerhpPairApiUrl && pokerhpPairApiToken) {
             try {
-              const linkUrl = await issueLinkUrl(friend.line_user_id, pokerhpPairApiUrl, pokerhpPairApiToken);
-              if (linkUrl) {
-                const linkMsg = `↓ 下のリンクをタップすると Seeker Start の記事が全部読めるようになります✨\n\n${linkUrl}\n\n※有効期限は30分です`;
-                await lineClient.pushMessage(friend.line_user_id, [buildMessage('text', linkMsg)]);
+              const linkUrl = await issueLinkUrl(
+                friend.line_user_id,
+                pokerhpPairApiUrl,
+                pokerhpPairApiToken,
+                SURVEY_REWARD_ARTICLE_PATH,
+              );
+              const linkMsg = linkUrl
+                ? buildSurveyCompleteMessage(linkUrl)
+                : 'アンケートへのご回答、ありがとうございます！\n記事リンクの発行に一時的に失敗しました。少し後に「アンケート」と送信してください。';
+              await lineClient.pushMessage(friend.line_user_id, [buildMessage('text', linkMsg)]);
 
-                const linkLogId = crypto.randomUUID();
-                await db
-                  .prepare(
-                    `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
-                     VALUES (?, ?, 'outgoing', 'text', ?, NULL, NULL, 'push', ?)`,
-                  )
-                  .bind(linkLogId, friend.id, linkMsg, jstNow())
-                  .run();
-              }
+              const linkLogId = crypto.randomUUID();
+              await db
+                .prepare(
+                  `INSERT INTO messages_log (id, friend_id, direction, message_type, content, broadcast_id, scenario_step_id, delivery_type, created_at)
+                   VALUES (?, ?, 'outgoing', 'text', ?, NULL, NULL, 'push', ?)`,
+                )
+                .bind(linkLogId, friend.id, linkMsg, jstNow())
+                .run();
             } catch (err) {
               console.error('Failed to send post-survey link URL:', err);
             }
