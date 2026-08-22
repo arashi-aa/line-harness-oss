@@ -1,69 +1,120 @@
-<div style="font-family:Arial,Helvetica,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif" class="absolute inset-0 overflow-hidden select-none font-sans text-[#FAFAD2] bg-[#16359f] bg-[radial-gradient(ellipse_at_46%_34%,#4470f0_0%,#2b52dc_24%,#173a9f_55%,#0c2079_80%,#06124f_100%)] flex flex-col">
+<style>
+/* ===== KOP ブラインドタイマー / 1920x1080 基準 ===== */
+/* クラス名は kop- 接頭辞で衝突を回避。Tailwind の有無に依存しないよう自前でリセットする */
+.kop-root *{margin:0;padding:0;box-sizing:border-box;font-weight:700;line-height:1}
+.kop-root{
+  position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column;
+  font-family:Arial,Helvetica,'Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic',sans-serif;
+  color:#FAFAD2;background:#16359f;
+  background-image:radial-gradient(ellipse at 46% 34%,#4470f0 0%,#2b52dc 24%,#173a9f 55%,#0c2079 80%,#06124f 100%);
+  -webkit-user-select:none;user-select:none;
+}
+/* 斜めライン風テクスチャ（装飾） */
+.kop-tex{position:absolute;inset:0;pointer-events:none;
+  background-image:repeating-linear-gradient(114deg,rgba(255,255,255,.032) 0,rgba(255,255,255,.032) 3px,rgba(255,255,255,0) 3px,rgba(255,255,255,0) 44px);}
 
-  <!-- 斜めのライン風テクスチャ（装飾のみ） -->
-  <div class="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(114deg,rgba(255,255,255,0.032)_0px,rgba(255,255,255,0.032)_3px,rgba(255,255,255,0)_3px,rgba(255,255,255,0)_44px)]"></div>
+/* ---- ヘッダー ---- */
+.kop-header{position:relative;flex:none;padding:49px 0 32px}
+.kop-logo{position:absolute;left:29px;top:17px;height:86px;max-width:144px;object-fit:contain;object-position:left}
+.kop-series{padding:0 182px;text-align:center;font-size:30px;letter-spacing:.06em}
+.kop-title{padding:0 182px;text-align:center;font-size:45px;line-height:1.15;margin-top:15px}
+
+/* ---- 本体3カラム ---- */
+.kop-body{position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:stretch}
+.kop-h{color:#F5A623;font-size:43px;white-space:nowrap}
+
+.kop-col-l{width:20%;min-height:0;display:flex;flex-direction:column;padding:0 10px 11px 29px}
+.kop-prize-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.kop-prize{margin-top:22px;display:grid;grid-template-columns:auto 1fr;justify-content:center;
+  align-content:start;column-gap:58px;row-gap:17px;font-size:41px}
+.kop-prize .n{text-align:right}
+.kop-players{flex:none;text-align:center}
+.kop-players .v{margin-top:15px;font-size:43px}
+
+.kop-col-c{width:55%;min-height:0;display:flex;flex-direction:column;align-items:center;padding:0 19px 11px}
+.kop-timer{margin-top:6px;font-size:346px;line-height:.9;letter-spacing:-.015em;white-space:nowrap;
+  text-shadow:0 0 26px rgba(255,255,215,.45),0 0 60px rgba(255,255,215,.25)}
+.kop-blinds-h{margin-top:auto}
+.kop-blinds{margin-top:17px;font-size:80px;white-space:nowrap}
+.kop-next{margin-top:auto;padding-top:16px;font-size:35px;white-space:nowrap}
+
+.kop-col-r{width:25%;min-height:0;display:flex;flex-direction:column;align-items:flex-end;
+  justify-content:space-between;padding:0 29px 11px 10px}
+.kop-col-r .kop-h{width:100%;text-align:right}
+.kop-val{font-size:43px;margin-top:15px}
+.kop-sub{font-size:37px;margin-top:13px}
+.kop-block{width:100%}
+.kop-rgroup{width:100%;display:flex;flex-direction:column;gap:49px}
+
+/* ---- 下部テロップ（静止1行） ---- */
+.kop-ticker{position:relative;flex:none;height:76px;display:flex;align-items:center;
+  justify-content:center;padding:0 38px}
+.kop-ticker>div{width:100%;text-align:center;color:#F5A623;font-size:30px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+
+<div class="kop-root absolute inset-0 bg-[#0a1628] flex flex-col text-white font-bold">
+  <div class="kop-tex"></div>
 
   <!-- ============ HEADER ============ -->
-  <header class="relative shrink-0 pt-[4.5vh] pb-[3vh]">
+  <header class="kop-header">
     <!-- ▼ ロゴ画像（差し替える場合は src だけ変更） -->
-    <img src="https://pokersatellite.net/bigevent/kop/wp-content/themes/tt5-poker/assets/brand/kop-logo-1080.png"
-         alt="Knight of Poker"
-         class="absolute left-[1.5vw] top-[1.6vh] h-[8vh] max-w-[7.5vw] object-contain object-left" />
-    <div class="px-[9.5vw] text-center text-[3vh] font-bold leading-none tracking-[0.06em]">Knight of Poker</div>
-    <div class="px-[9.5vw] text-center text-[4.2vh] font-bold leading-[1.15] mt-[1.4vh]">{{sessionName}}</div>
+    <img class="kop-logo" src="https://pokersatellite.net/bigevent/kop/wp-content/themes/tt5-poker/assets/brand/kop-logo-1080.png" alt="Knight of Poker" />
+    <div class="kop-series">Knight of Poker</div>
+    <div class="kop-title">{{sessionName}}</div>
   </header>
 
   <!-- ============ BODY ============ -->
-  <main class="relative flex-1 min-h-0 flex items-stretch">
+  <main class="kop-body flex">
 
     <!-- ---------- LEFT : PRIZE / PLAYERS ---------- -->
-    <section class="w-[21%] min-h-0 flex flex-col pl-[1.5vw] pr-[0.5vw] pb-[1vh]">
-      <div class="flex-1 min-h-0 flex flex-col">
-        <h2 class="text-center text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">PRIZE</h2>
+    <section class="kop-col-l w-[20%] flex flex-col">
+      <div class="kop-prize-wrap">
+        <h2 class="kop-h" style="text-align:center">PRIZE</h2>
         <!-- ▼▼▼ PRIZE：ここだけ書き換えてください（行を足す／削るだけで件数を変えられます） ▼▼▼ -->
-        <div class="mt-[2vh] grid grid-cols-[auto_1fr] justify-center content-start gap-x-[3vw] gap-y-[1.6vh] text-[3.8vh] font-bold leading-none">
-          <span class="text-right">1.</span><span class="text-left">Main Seat</span>
-          <span class="text-right">2.</span><span class="text-left">Main Seat</span>
-          <span class="text-right">3.</span><span class="text-left">Main Seat</span>
-          <span class="text-right">4.</span><span class="text-left">Main Seat</span>
-          <span class="text-right">5.</span><span class="text-left">Main Seat</span>
+        <div class="kop-prize">
+          <span class="n">1.</span><span>Main Seat</span>
+          <span class="n">2.</span><span>Main Seat</span>
+          <span class="n">3.</span><span>Main Seat</span>
+          <span class="n">4.</span><span>Main Seat</span>
+          <span class="n">5.</span><span>Main Seat</span>
         </div>
         <!-- ▲▲▲ PRIZE ここまで ▲▲▲ -->
       </div>
-      <div class="shrink-0 text-center">
-        <h2 class="text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">PLAYERS</h2>
-        <div class="mt-[1.4vh] text-[4vh] font-bold leading-none">{{playerCount}}</div>
+      <div class="kop-players">
+        <h2 class="kop-h">PLAYERS</h2>
+        <div class="v">{{playerCount}}</div>
       </div>
     </section>
 
     <!-- ---------- CENTER : LEVEL / TIMER / BLINDS ---------- -->
-    <section class="w-[55%] min-h-0 flex flex-col items-center px-[1vw] pb-[1vh]">
-      <h2 class="text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">LEVEL {{currentLevel}}</h2>
-      <div class="mt-[0.6vh] text-[32vh] font-bold leading-[0.9] tracking-[-0.015em] whitespace-nowrap drop-shadow-[0_0_2.4vh_rgba(255,255,215,0.45)]">{{remainingTime}}</div>
-      <h2 class="mt-auto text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">BLINDS (BB ANTE)</h2>
-      <div class="mt-[1.6vh] text-[7.4vh] font-bold leading-none whitespace-nowrap">{{smallBlind}} | {{bigBlind}} ({{ante}})</div>
-      <div class="mt-auto pt-[1.5vh] text-[3.2vh] font-bold leading-none whitespace-nowrap">NEXT LEVEL - {{nextSmallBlind}} | {{nextBigBlind}} ({{nextAnte}})</div>
+    <section class="kop-col-c w-[55%] flex flex-col items-center">
+      <h2 class="kop-h">LEVEL {{currentLevel}}</h2>
+      <div class="kop-timer">{{remainingTime}}</div>
+      <h2 class="kop-h kop-blinds-h">BLINDS (BB ANTE)</h2>
+      <div class="kop-blinds">{{smallBlind}} | {{bigBlind}} ({{ante}})</div>
+      <div class="kop-next">NEXT LEVEL - {{nextSmallBlind}} | {{nextBigBlind}} ({{nextAnte}})</div>
     </section>
 
     <!-- ---------- RIGHT : REGISTRATION / BREAK / STACK / CHIPS ---------- -->
-    <section class="w-[24%] min-h-0 flex flex-col items-end justify-between pr-[1.5vw] pl-[0.5vw] pb-[1vh]">
-      <div class="w-full">
-        <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">REGISTRATION</h2>
-        <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{regCloseCountdown}}</div>
-        <div class="text-left text-[3.4vh] font-bold leading-none mt-[1.2vh]">Time left</div>
+    <section class="kop-col-r w-[25%] flex flex-col">
+      <div class="kop-block">
+        <h2 class="kop-h">REGISTRATION</h2>
+        <div class="kop-val">{{regCloseCountdown}}</div>
+        <div class="kop-sub">Time left</div>
       </div>
-      <div class="w-full flex flex-col gap-y-[4.5vh]">
+      <div class="kop-rgroup">
         <div>
-          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">NEXT BREAK IN</h2>
-          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{nextBreakTime}}</div>
+          <h2 class="kop-h">NEXT BREAK IN</h2>
+          <div class="kop-val">{{nextBreakTime}}</div>
         </div>
         <div>
-          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">AVERAGE STACK</h2>
-          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{averageStack}}</div>
+          <h2 class="kop-h">AVERAGE STACK</h2>
+          <div class="kop-val">{{averageStack}}</div>
         </div>
         <div>
-          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">TOTAL CHIPS</h2>
-          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{totalChips}}</div>
+          <h2 class="kop-h">TOTAL CHIPS</h2>
+          <div class="kop-val">{{totalChips}}</div>
         </div>
       </div>
     </section>
@@ -71,8 +122,8 @@
   </main>
 
   <!-- ============ TICKER（静止1行） ============ -->
-  <footer class="relative shrink-0 h-[7vh] flex items-center justify-center px-[2vw]">
-    <div class="w-full text-center text-[#F5A623] text-[2.8vh] font-bold leading-none whitespace-nowrap overflow-hidden text-ellipsis">{{announcementBody}}</div>
+  <footer class="kop-ticker">
+    <div>{{announcementBody}}</div>
   </footer>
 
 </div>
