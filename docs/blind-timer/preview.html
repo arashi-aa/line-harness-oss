@@ -36,6 +36,7 @@
 /* ---- 本体3カラム ---- */
 .kop-body{position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:stretch}
 .kop-h{color:#F5A623;font-size:43px;white-space:nowrap}
+.kop-col-c .kop-h{font-size:46px}
 
 .kop-col-l{width:20%;min-height:0;display:flex;flex-direction:column;padding:0 10px 11px 29px}
 .kop-prize-wrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
@@ -45,18 +46,20 @@
 .kop-players{flex:none;text-align:center}
 .kop-players .v{margin-top:15px;font-size:43px}
 
-.kop-col-c{width:55%;min-height:0;display:flex;flex-direction:column;align-items:center;padding:0 19px 11px}
-.kop-timer{margin-top:6px;font-size:346px;line-height:.9;letter-spacing:-.015em;white-space:nowrap;
+.kop-col-c{width:57%;min-height:0;display:flex;flex-direction:column;align-items:center;padding:0 19px 11px}
+.kop-timer{font-size:410px;line-height:.9;letter-spacing:-.015em;white-space:nowrap;
   text-shadow:0 0 26px rgba(255,255,215,.45),0 0 60px rgba(255,255,215,.25)}
-.kop-blinds-h{margin-top:auto}
-.kop-blinds{margin-top:17px;font-size:80px;white-space:nowrap}
-.kop-next{margin-top:auto;padding-top:16px;font-size:35px;white-space:nowrap}
+/* 中央カラムの可変スペーサー。上下同比でタイマーを LEVEL と BLINDS の中央に置く */
+.kop-sp{flex:1 1 0;min-height:0}
+.kop-sp-btm{flex:1.9 1 0;min-height:0}
+.kop-blinds{margin-top:17px;font-size:82px;white-space:nowrap}
+.kop-next{font-size:37px;white-space:nowrap}
 
-.kop-col-r{width:25%;min-height:0;display:flex;flex-direction:column;align-items:flex-end;
+.kop-col-r{width:23%;min-height:0;display:flex;flex-direction:column;align-items:flex-end;
   justify-content:space-between;padding:0 29px 11px 10px}
 .kop-col-r .kop-h{width:100%;text-align:right}
-.kop-val{font-size:43px;margin-top:15px}
-.kop-sub{font-size:37px;margin-top:13px}
+.kop-val{font-size:43px;margin-top:15px;text-align:right}
+.kop-sub{font-size:37px;margin-top:13px;text-align:right}
 .kop-block{width:100%}
 .kop-rgroup{width:100%;display:flex;flex-direction:column;gap:49px}
 
@@ -102,16 +105,19 @@
     </section>
 
     <!-- ---------- CENTER : LEVEL / TIMER / BLINDS ---------- -->
-    <section class="kop-col-c w-[55%] flex flex-col items-center">
+    <section class="kop-col-c flex flex-col items-center">
       <h2 class="kop-h">LEVEL 11</h2>
+      <div class="kop-sp"></div>
       <div class="kop-timer">06:27</div>
-      <h2 class="kop-h kop-blinds-h">BLINDS (BB ANTE)</h2>
+      <div class="kop-sp"></div>
+      <h2 class="kop-h">BLINDS (BB ANTE)</h2>
       <div class="kop-blinds">1,500 | 3,000 (3,000)</div>
+      <div class="kop-sp-btm"></div>
       <div class="kop-next">NEXT LEVEL - 2,000 | 4,000 (4,000)</div>
     </section>
 
     <!-- ---------- RIGHT : REGISTRATION / BREAK / STACK / CHIPS ---------- -->
-    <section class="kop-col-r w-[25%] flex flex-col">
+    <section class="kop-col-r flex flex-col">
       <div class="kop-block">
         <h2 class="kop-h">REGISTRATION</h2>
         <div class="kop-val">01:10:00</div>
