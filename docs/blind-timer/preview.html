@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>KOP ブラインドタイマー プレビュー</title>
+<style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.left-\[1\.5vw\]{left:1.5vw}.top-\[1\.6vh\]{top:1.6vh}.mt-\[0\.6vh\]{margin-top:.6vh}.mt-\[1\.2vh\]{margin-top:1.2vh}.mt-\[1\.4vh\]{margin-top:1.4vh}.mt-\[1\.6vh\]{margin-top:1.6vh}.mt-\[2vh\]{margin-top:2vh}.mt-auto{margin-top:auto}.flex{display:flex}.grid{display:grid}.h-\[7vh\]{height:7vh}.h-\[8vh\]{height:8vh}.min-h-0{min-height:0}.w-\[21\%\]{width:21%}.w-\[24\%\]{width:24%}.w-\[55\%\]{width:55%}.w-full{width:100%}.max-w-\[7\.5vw\]{max-width:7.5vw}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.grid-cols-\[auto_1fr\]{grid-template-columns:auto 1fr}.flex-col{flex-direction:column}.content-start{align-content:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.items-stretch{align-items:stretch}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-x-\[3vw\]{-moz-column-gap:3vw;column-gap:3vw}.gap-y-\[1\.6vh\]{row-gap:1.6vh}.gap-y-\[4\.5vh\]{row-gap:4.5vh}.overflow-hidden{overflow:hidden}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.bg-\[\#16359f\]{--tw-bg-opacity:1;background-color:rgb(22 53 159/var(--tw-bg-opacity,1))}.bg-\[radial-gradient\(ellipse_at_46\%_34\%\2c \#4470f0_0\%\2c \#2b52dc_24\%\2c \#173a9f_55\%\2c \#0c2079_80\%\2c \#06124f_100\%\)\]{background-image:radial-gradient(ellipse at 46% 34%,#4470f0 0,#2b52dc 24%,#173a9f 55%,#0c2079 80%,#06124f 100%)}.bg-\[repeating-linear-gradient\(114deg\2c rgba\(255\2c 255\2c 255\2c 0\.032\)_0px\2c rgba\(255\2c 255\2c 255\2c 0\.032\)_3px\2c rgba\(255\2c 255\2c 255\2c 0\)_3px\2c rgba\(255\2c 255\2c 255\2c 0\)_44px\)\]{background-image:repeating-linear-gradient(114deg,hsla(0,0%,100%,.032),hsla(0,0%,100%,.032) 3px,hsla(0,0%,100%,0) 0,hsla(0,0%,100%,0) 44px)}.object-contain{-o-object-fit:contain;object-fit:contain}.object-left{-o-object-position:left;object-position:left}.px-\[1vw\]{padding-left:1vw;padding-right:1vw}.px-\[2vw\]{padding-left:2vw;padding-right:2vw}.px-\[9\.5vw\]{padding-left:9.5vw;padding-right:9.5vw}.pb-\[1vh\]{padding-bottom:1vh}.pb-\[3vh\]{padding-bottom:3vh}.pl-\[0\.5vw\]{padding-left:.5vw}.pl-\[1\.5vw\]{padding-left:1.5vw}.pr-\[0\.5vw\]{padding-right:.5vw}.pr-\[1\.5vw\]{padding-right:1.5vw}.pt-\[1\.5vh\]{padding-top:1.5vh}.pt-\[4\.5vh\]{padding-top:4.5vh}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-sans{font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji}.text-\[2\.8vh\]{font-size:2.8vh}.text-\[3\.2vh\]{font-size:3.2vh}.text-\[3\.4vh\]{font-size:3.4vh}.text-\[3\.8vh\]{font-size:3.8vh}.text-\[32vh\]{font-size:32vh}.text-\[3vh\]{font-size:3vh}.text-\[4\.2vh\]{font-size:4.2vh}.text-\[4vh\]{font-size:4vh}.text-\[7\.4vh\]{font-size:7.4vh}.font-bold{font-weight:700}.leading-\[0\.9\]{line-height:.9}.leading-\[1\.15\]{line-height:1.15}.leading-none{line-height:1}.tracking-\[-0\.015em\]{letter-spacing:-.015em}.tracking-\[0\.06em\]{letter-spacing:.06em}.text-\[\#F5A623\]{--tw-text-opacity:1;color:rgb(245 166 35/var(--tw-text-opacity,1))}.text-\[\#FAFAD2\]{--tw-text-opacity:1;color:rgb(250 250 210/var(--tw-text-opacity,1))}.drop-shadow-\[0_0_2\.4vh_rgba\(255\2c 255\2c 215\2c 0\.45\)\]{--tw-drop-shadow:drop-shadow(0 0 2.4vh rgba(255,255,215,.45));filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}</style>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  /* 実機と同じく「表示領域いっぱい」で描画する。ウィンドウを 16:9 にするか F11 で全画面推奨 */
+  #stage{position:relative;width:100vw;height:100vh;overflow:hidden}
+</style>
+</head>
+<body>
+<div id="stage">
+<div style="font-family:Arial,Helvetica,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif" class="absolute inset-0 overflow-hidden select-none font-sans text-[#FAFAD2] bg-[#16359f] bg-[radial-gradient(ellipse_at_46%_34%,#4470f0_0%,#2b52dc_24%,#173a9f_55%,#0c2079_80%,#06124f_100%)] flex flex-col">
+
+  <!-- 斜めのライン風テクスチャ（装飾のみ） -->
+  <div class="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(114deg,rgba(255,255,255,0.032)_0px,rgba(255,255,255,0.032)_3px,rgba(255,255,255,0)_3px,rgba(255,255,255,0)_44px)]"></div>
+
+  <!-- ============ HEADER ============ -->
+  <header class="relative shrink-0 pt-[4.5vh] pb-[3vh]">
+    <!-- ▼ ロゴ画像（差し替える場合は src だけ変更） -->
+    <img src="https://pokersatellite.net/bigevent/kop/wp-content/themes/tt5-poker/assets/brand/kop-logo-1080.png"
+         alt="Knight of Poker"
+         class="absolute left-[1.5vw] top-[1.6vh] h-[8vh] max-w-[7.5vw] object-contain object-left" />
+    <div class="px-[9.5vw] text-center text-[3vh] font-bold leading-none tracking-[0.06em]">Knight of Poker</div>
+    <div class="px-[9.5vw] text-center text-[4.2vh] font-bold leading-[1.15] mt-[1.4vh]">#S2 SATELLITE TO #3 MAIN EVENT | 5 SEATS GTD [40 CAP]</div>
+  </header>
+
+  <!-- ============ BODY ============ -->
+  <main class="relative flex-1 min-h-0 flex items-stretch">
+
+    <!-- ---------- LEFT : PRIZE / PLAYERS ---------- -->
+    <section class="w-[21%] min-h-0 flex flex-col pl-[1.5vw] pr-[0.5vw] pb-[1vh]">
+      <div class="flex-1 min-h-0 flex flex-col">
+        <h2 class="text-center text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">PRIZE</h2>
+        <!-- ▼▼▼ PRIZE：ここだけ書き換えてください（行を足す／削るだけで件数を変えられます） ▼▼▼ -->
+        <div class="mt-[2vh] grid grid-cols-[auto_1fr] justify-center content-start gap-x-[3vw] gap-y-[1.6vh] text-[3.8vh] font-bold leading-none">
+          <span class="text-right">1.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">2.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">3.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">4.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">5.</span><span class="text-left">Main Seat</span>
+        </div>
+        <!-- ▲▲▲ PRIZE ここまで ▲▲▲ -->
+      </div>
+      <div class="shrink-0 text-center">
+        <h2 class="text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">PLAYERS</h2>
+        <div class="mt-[1.4vh] text-[4vh] font-bold leading-none">- / 11</div>
+      </div>
+    </section>
+
+    <!-- ---------- CENTER : LEVEL / TIMER / BLINDS ---------- -->
+    <section class="w-[55%] min-h-0 flex flex-col items-center px-[1vw] pb-[1vh]">
+      <h2 class="text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">LEVEL 11</h2>
+      <div class="mt-[0.6vh] text-[32vh] font-bold leading-[0.9] tracking-[-0.015em] whitespace-nowrap drop-shadow-[0_0_2.4vh_rgba(255,255,215,0.45)]">06:27</div>
+      <h2 class="mt-auto text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">BLINDS (BB ANTE)</h2>
+      <div class="mt-[1.6vh] text-[7.4vh] font-bold leading-none whitespace-nowrap">1,500 | 3,000 (3,000)</div>
+      <div class="mt-auto pt-[1.5vh] text-[3.2vh] font-bold leading-none whitespace-nowrap">NEXT LEVEL - 2,000 | 4,000 (4,000)</div>
+    </section>
+
+    <!-- ---------- RIGHT : REGISTRATION / BREAK / STACK / CHIPS ---------- -->
+    <section class="w-[24%] min-h-0 flex flex-col items-end justify-between pr-[1.5vw] pl-[0.5vw] pb-[1vh]">
+      <div class="w-full">
+        <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">REGISTRATION</h2>
+        <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">01:10:00</div>
+        <div class="text-left text-[3.4vh] font-bold leading-none mt-[1.2vh]">Time left</div>
+      </div>
+      <div class="w-full flex flex-col gap-y-[4.5vh]">
+        <div>
+          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">NEXT BREAK IN</h2>
+          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">03:16:27</div>
+        </div>
+        <div>
+          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">AVERAGE STACK</h2>
+          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">20,000</div>
+        </div>
+        <div>
+          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">TOTAL CHIPS</h2>
+          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">220,000</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ TICKER（静止1行） ============ -->
+  <footer class="relative shrink-0 h-[7vh] flex items-center justify-center px-[2vw]">
+    <div class="w-full text-center text-[#F5A623] text-[2.8vh] font-bold leading-none whitespace-nowrap overflow-hidden text-ellipsis">レベル8終了をもってレジストレーションは締め切られます。/ 任意のMAIN EVENT DAY 1で権利を使用できます。</div>
+  </footer>
+
+</div>
+
+</div>
+</body>
+</html>

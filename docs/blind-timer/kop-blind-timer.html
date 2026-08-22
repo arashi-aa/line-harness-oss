@@ -1,0 +1,78 @@
+<div style="font-family:Arial,Helvetica,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif" class="absolute inset-0 overflow-hidden select-none font-sans text-[#FAFAD2] bg-[#16359f] bg-[radial-gradient(ellipse_at_46%_34%,#4470f0_0%,#2b52dc_24%,#173a9f_55%,#0c2079_80%,#06124f_100%)] flex flex-col">
+
+  <!-- 斜めのライン風テクスチャ（装飾のみ） -->
+  <div class="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(114deg,rgba(255,255,255,0.032)_0px,rgba(255,255,255,0.032)_3px,rgba(255,255,255,0)_3px,rgba(255,255,255,0)_44px)]"></div>
+
+  <!-- ============ HEADER ============ -->
+  <header class="relative shrink-0 pt-[4.5vh] pb-[3vh]">
+    <!-- ▼ ロゴ画像（差し替える場合は src だけ変更） -->
+    <img src="https://pokersatellite.net/bigevent/kop/wp-content/themes/tt5-poker/assets/brand/kop-logo-1080.png"
+         alt="Knight of Poker"
+         class="absolute left-[1.5vw] top-[1.6vh] h-[8vh] max-w-[7.5vw] object-contain object-left" />
+    <div class="px-[9.5vw] text-center text-[3vh] font-bold leading-none tracking-[0.06em]">Knight of Poker</div>
+    <div class="px-[9.5vw] text-center text-[4.2vh] font-bold leading-[1.15] mt-[1.4vh]">{{sessionName}}</div>
+  </header>
+
+  <!-- ============ BODY ============ -->
+  <main class="relative flex-1 min-h-0 flex items-stretch">
+
+    <!-- ---------- LEFT : PRIZE / PLAYERS ---------- -->
+    <section class="w-[21%] min-h-0 flex flex-col pl-[1.5vw] pr-[0.5vw] pb-[1vh]">
+      <div class="flex-1 min-h-0 flex flex-col">
+        <h2 class="text-center text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">PRIZE</h2>
+        <!-- ▼▼▼ PRIZE：ここだけ書き換えてください（行を足す／削るだけで件数を変えられます） ▼▼▼ -->
+        <div class="mt-[2vh] grid grid-cols-[auto_1fr] justify-center content-start gap-x-[3vw] gap-y-[1.6vh] text-[3.8vh] font-bold leading-none">
+          <span class="text-right">1.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">2.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">3.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">4.</span><span class="text-left">Main Seat</span>
+          <span class="text-right">5.</span><span class="text-left">Main Seat</span>
+        </div>
+        <!-- ▲▲▲ PRIZE ここまで ▲▲▲ -->
+      </div>
+      <div class="shrink-0 text-center">
+        <h2 class="text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">PLAYERS</h2>
+        <div class="mt-[1.4vh] text-[4vh] font-bold leading-none">{{playerCount}}</div>
+      </div>
+    </section>
+
+    <!-- ---------- CENTER : LEVEL / TIMER / BLINDS ---------- -->
+    <section class="w-[55%] min-h-0 flex flex-col items-center px-[1vw] pb-[1vh]">
+      <h2 class="text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">LEVEL {{currentLevel}}</h2>
+      <div class="mt-[0.6vh] text-[32vh] font-bold leading-[0.9] tracking-[-0.015em] whitespace-nowrap drop-shadow-[0_0_2.4vh_rgba(255,255,215,0.45)]">{{remainingTime}}</div>
+      <h2 class="mt-auto text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">BLINDS (BB ANTE)</h2>
+      <div class="mt-[1.6vh] text-[7.4vh] font-bold leading-none whitespace-nowrap">{{smallBlind}} | {{bigBlind}} ({{ante}})</div>
+      <div class="mt-auto pt-[1.5vh] text-[3.2vh] font-bold leading-none whitespace-nowrap">NEXT LEVEL - {{nextSmallBlind}} | {{nextBigBlind}} ({{nextAnte}})</div>
+    </section>
+
+    <!-- ---------- RIGHT : REGISTRATION / BREAK / STACK / CHIPS ---------- -->
+    <section class="w-[24%] min-h-0 flex flex-col items-end justify-between pr-[1.5vw] pl-[0.5vw] pb-[1vh]">
+      <div class="w-full">
+        <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">REGISTRATION</h2>
+        <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{regCloseCountdown}}</div>
+        <div class="text-left text-[3.4vh] font-bold leading-none mt-[1.2vh]">Time left</div>
+      </div>
+      <div class="w-full flex flex-col gap-y-[4.5vh]">
+        <div>
+          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">NEXT BREAK IN</h2>
+          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{nextBreakTime}}</div>
+        </div>
+        <div>
+          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">AVERAGE STACK</h2>
+          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{averageStack}}</div>
+        </div>
+        <div>
+          <h2 class="text-right text-[#F5A623] text-[4vh] font-bold leading-none whitespace-nowrap">TOTAL CHIPS</h2>
+          <div class="text-left text-[4vh] font-bold leading-none mt-[1.4vh]">{{totalChips}}</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ TICKER（静止1行） ============ -->
+  <footer class="relative shrink-0 h-[7vh] flex items-center justify-center px-[2vw]">
+    <div class="w-full text-center text-[#F5A623] text-[2.8vh] font-bold leading-none whitespace-nowrap overflow-hidden text-ellipsis">{{announcementBody}}</div>
+  </footer>
+
+</div>
